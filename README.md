@@ -1,2 +1,2 @@
-# Gob
-Sandbox for tests concerning gob package
+# Serialization
+Sandbox for tests concerning data serialization.
