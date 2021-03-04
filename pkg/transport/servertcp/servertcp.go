@@ -5,38 +5,25 @@ import (
 	"io"
 	"log"
 	"net"
-	"strconv"
+
+	"main/pkg/transport/config"
 
 	"github.com/pkg/errors"
 )
 
-type Cfg struct {
-	Port     uint
-	IP       string
-	Protocol string
-}
-
 type Server struct {
-	Cfg
+	configtransport.Cfg
 	comms chan []byte
 	stop  chan struct{}
 }
 
-func defaultConfiguration() *Cfg {
-	return &Cfg{
-		Port:     8080,
-		IP:       "localhost",
-		Protocol: "tcp",
-	}
-}
-
-func NewServer(cfg *Cfg) (*Server, error) {
+func NewServer(cfg *configtransport.Cfg) (*Server, error) {
 	result := new(Server)
 	result.comms = make(chan []byte)
 	result.stop = make(chan struct{})
 
 	if cfg == nil {
-		result.Cfg = *defaultConfiguration()
+		result.Cfg = *configtransport.NewDefaultConfiguration()
 		return result, nil
 	}
 
@@ -49,7 +36,7 @@ func (s *Server) Serve() (<-chan []byte, chan struct{}, error) {
 }
 
 func (s *Server) listen() error {
-	listener, errListen := net.Listen(s.Protocol, s.IP+":"+strconv.FormatUint(uint64(s.Port), 10))
+	listener, errListen := net.Listen(s.Protocol, s.Cfg.Socket())
 	if errListen != nil {
 		return errors.WithMessage(errListen, "could not start TCP server")
 	}

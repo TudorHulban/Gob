@@ -1,9 +1,9 @@
 package transport
 
 type ITransportClient interface {
-	Send(Cfg, payload []byte) error
+	Send(payload []byte) (string, error)
 }
 
 type ITransportServer interface {
-	Serve() (payload <-chan []byte, stopSignal chan<- struct{}, error)
+	Serve() (<-chan []byte, chan<- struct{}, error) // communication and stop channels
 }
