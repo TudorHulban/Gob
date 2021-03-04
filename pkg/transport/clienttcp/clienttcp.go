@@ -1,7 +1,8 @@
 package clienttcp
 
 import (
-	"bufio"
+	//"bufio"
+	"fmt"
 	"main/pkg/transport/config"
 	"net"
 )
@@ -24,10 +25,15 @@ func NewClient(cfg *configtransport.Cfg) (*ClientTCP, error) {
 }
 
 func (c *ClientTCP) Send(payload []byte) (string, error) {
+	c.L.Infof("sending message to socket %s", c.Socket())
 	conn, errDial := net.Dial(c.Protocol, c.Cfg.Socket())
 	if errDial != nil {
+		c.L.Debug(errDial)
 		return "", errDial
 	}
 
-	return bufio.NewReader(conn).ReadString('\n')
+	fmt.Fprintf(conn, string(payload))
+
+	//return bufio.NewReader(conn).ReadString('\n')
+	return "", nil
 }

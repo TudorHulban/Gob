@@ -1,6 +1,11 @@
 package configtransport
 
-import "strconv"
+import (
+	"os"
+	"strconv"
+
+	"github.com/TudorHulban/log"
+)
 
 // TODO: load configuration from external source.
 
@@ -8,6 +13,7 @@ type Cfg struct {
 	Port     uint
 	IP       string
 	Protocol string
+	L        *log.LogInfo
 }
 
 const (
@@ -21,6 +27,7 @@ func NewDefaultConfiguration() *Cfg {
 		Port:     Port,
 		IP:       IP,
 		Protocol: Protocol,
+		L:        log.New(log.DEBUG, os.Stdout, true),
 	}
 }
 

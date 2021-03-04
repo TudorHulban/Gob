@@ -32,25 +32,26 @@ func NewServer(cfg *configtransport.Cfg) (*Server, error) {
 }
 
 func (s *Server) Serve() (<-chan []byte, chan struct{}, error) {
+	go s.listen()
 	return s.comms, s.stop, nil
 }
 
 func (s *Server) listen() error {
+	s.L.Infof("listening on IP:%s, port:%d", s.IP, s.Port)
+
 	listener, errListen := net.Listen(s.Protocol, s.Cfg.Socket())
 	if errListen != nil {
 		return errors.WithMessage(errListen, "could not start TCP server")
 	}
 
-	go func() {
-		for {
-			conn, err := listener.Accept()
-			if err != nil {
-				log.Println("failed to accept connection:", err)
-				continue
-			}
-			go handleConn(conn, s.comms)
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Println("failed to accept connection:", err)
+			continue
 		}
-	}()
+		go handleConn(conn, s.comms)
+	}
 
 	return nil
 }
