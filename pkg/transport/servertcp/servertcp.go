@@ -3,10 +3,9 @@ package servertcp
 import (
 	"bufio"
 	"io"
-	"log"
 	"net"
 
-	"main/pkg/transport/config"
+	"main/pkg/transport/configtransport"
 
 	"github.com/pkg/errors"
 )
@@ -47,18 +46,17 @@ func (s *Server) listen() error {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println("failed to accept connection:", err)
+			s.L.Info("failed to accept connection:", err)
 			continue
 		}
-		go handleConn(conn, s.comms)
+		go s.handleConn(conn, s.comms)
 	}
 
 	return nil
 }
 
-// handleConn Connection remains opened until client closes it.
-// TODO: assert addition of idle timeout
-func handleConn(conn net.Conn, comms chan []byte) {
+// handleConn Connection closes after client message.
+func (s *Server) handleConn(conn net.Conn, comms chan []byte) {
 	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
@@ -66,12 +64,18 @@ func handleConn(conn net.Conn, comms chan []byte) {
 		message, errReader := reader.ReadBytes(byte('\n'))
 		if errReader != nil {
 			if errReader != io.EOF {
-				log.Println("failed to read data", errReader)
+				s.L.Info("failed to read data", errReader)
 			}
 			return
 		}
 
-		comms <- message
-		log.Println("received: ", string(message))
+		// closing connection after message. should we leave it open?
+		if len(message) > 0 {
+			s.L.Debug("received: ", string(message))
+			comms <- message
+			break
+		}
 	}
+
+	conn.Write([]byte("thank you"))
 }

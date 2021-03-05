@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"main/pkg/transport/clienttcp"
 	"os"
@@ -15,5 +16,10 @@ func main() {
 	}
 
 	r, errSend := c.Send([]byte("xxx"))
-	fmt.Println(r, errSend)
+	if errSend != io.EOF {
+		log.Println("Error with send:", errSend, r)
+		os.Exit(2)
+	}
+
+	fmt.Println("Server response:", r)
 }

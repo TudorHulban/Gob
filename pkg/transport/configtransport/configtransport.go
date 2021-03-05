@@ -20,6 +20,7 @@ const (
 	Port     = 8080
 	IP       = "localhost"
 	Protocol = "tcp"
+	ACK      = "thank you"
 )
 
 func NewDefaultConfiguration() *Cfg {

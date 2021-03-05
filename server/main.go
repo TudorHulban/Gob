@@ -24,7 +24,7 @@ func main() {
 		select {
 		case msg := <-comms:
 			{
-				fmt.Println("message:", msg)
+				fmt.Println("message:", string(msg))
 			}
 		case <-stop:
 			break
