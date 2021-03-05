@@ -10,25 +10,28 @@ import (
 // TODO: load configuration from external source.
 
 type Cfg struct {
-	Port     uint
-	IP       string
-	Protocol string
-	L        *log.LogInfo
+	TerminationSecs uint
+	Port            uint
+	IP              string
+	Protocol        string
+	L               *log.LogInfo
 }
 
 const (
-	Port     = 8080
-	IP       = "localhost"
-	Protocol = "tcp"
-	ACK      = "thank you"
+	TerminationSecs = 9
+	Port            = 8080
+	IP              = "localhost"
+	Protocol        = "tcp"
+	ACK             = "thank you"
 )
 
 func NewDefaultConfiguration() *Cfg {
 	return &Cfg{
-		Port:     Port,
-		IP:       IP,
-		Protocol: Protocol,
-		L:        log.New(log.DEBUG, os.Stdout, true),
+		TerminationSecs: TerminationSecs,
+		Port:            Port,
+		IP:              IP,
+		Protocol:        Protocol,
+		L:               log.New(log.DEBUG, os.Stdout, true),
 	}
 }
 

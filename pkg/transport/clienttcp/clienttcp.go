@@ -25,7 +25,7 @@ func NewClient(cfg *configtransport.Cfg) (*ClientTCP, error) {
 }
 
 func (c *ClientTCP) Send(payload []byte) (string, error) {
-	c.L.Infof("sending message to socket %s", c.Socket())
+	c.L.Printf("Sending message to socket %s.", c.Socket())
 
 	conn, errDial := net.Dial(c.Protocol, c.Cfg.Socket())
 	if errDial != nil {

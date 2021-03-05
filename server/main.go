@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"main/pkg/transport/servertcp"
 	"os"
@@ -20,14 +19,22 @@ func main() {
 		os.Exit(2)
 	}
 
-	for {
+	var serverStopping bool
+
+	for !serverStopping {
 		select {
 		case msg := <-comms:
 			{
-				fmt.Println("message:", string(msg))
+				log.Println("message:", string(msg))
 			}
 		case <-stop:
-			break
+			{
+				log.Println("should exit now")
+				serverStopping = true
+				break
+			}
 		}
 	}
+
+	log.Println("exiting...")
 }
