@@ -5,5 +5,5 @@ type ITransportClient interface {
 }
 
 type ITransportServer interface {
-	Serve() (<-chan []byte, chan<- struct{}, error) // communication and stop channels
+	Serve() (<-chan []byte, chan struct{}, error) // communication and stop channels
 }
