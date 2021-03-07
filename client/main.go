@@ -21,7 +21,6 @@ func main() {
 		Payload: "xxx",
 	}).Send()
 
-	//c.Send([]byte("xxx"))
 	if errSend != io.EOF {
 		log.Println("Error with send:", errSend, r)
 		os.Exit(2)

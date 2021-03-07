@@ -3,12 +3,11 @@ package processor
 // Package processor added for structuring the processing with the help of serialization interface.
 
 import (
-	"fmt"
-	"io"
 	"main/pkg/seri"
 	"main/pkg/seri/serigob"
 
 	"github.com/TudorHulban/log"
+	"github.com/pkg/errors"
 )
 
 type Proc struct {
@@ -29,9 +28,9 @@ func GobProcessing(g serigob.MGob) Option {
 	}
 }
 
-func Logger(level int, writeTo io.Writer) Option {
+func Logger(l *log.LogInfo) Option {
 	return func(p *Proc) error {
-		p.L = log.New(level, writeTo, true)
+		p.L = l
 		return nil
 	}
 }
@@ -58,11 +57,11 @@ func NewProc(opts ...Option) (*Proc, error) {
 func (p *Proc) MsgDecode(payload []byte) error {
 	msg, errDec := p.Actions.Decode(payload)
 	if errDec != nil {
-		return errDec
+		return errors.WithMessage(errDec, "could not decode message")
 	}
 
 	// TODO: add logic based on message
-	p.L.Print("Message:", msg)
+	p.L.Print("Message is:", msg)
 
 	return nil
 }

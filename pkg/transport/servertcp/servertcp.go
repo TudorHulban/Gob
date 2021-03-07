@@ -8,7 +8,11 @@ import (
 	"os/signal"
 	"time"
 
+	"main/pkg/processor"
+	"main/pkg/seri/serigob"
 	"main/pkg/transport/configtransport"
+
+	"github.com/TudorHulban/log"
 
 	"github.com/pkg/errors"
 )
@@ -19,21 +23,30 @@ type Server struct {
 	serverStopping bool
 	comms          chan []byte
 	stop           chan struct{} // stop channel
+
+	P *processor.Proc
+	L *log.LogInfo
 }
 
 // NewServer Constructor creating a server with default or given configuration.
 func NewServer(cfg *configtransport.Cfg) (*Server, error) {
-	result := new(Server)
-	result.comms = make(chan []byte)
-	result.stop = make(chan struct{})
+	var g serigob.MGob
+	logger := log.New(log.DEBUG, os.Stdout, true)
+
+	p, err := processor.NewProc(processor.GobProcessing(g), processor.Logger(logger))
+	if err != nil {
+		return nil, errors.WithMessage(err, "could not create default transport configuration")
+	}
+
+	result := &Server{
+		comms: make(chan []byte),
+		stop:  make(chan struct{}),
+		P:     p,
+		L:     logger,
+	}
 
 	if cfg == nil {
-		c, err := configtransport.NewDefaultConfiguration()
-		if err != nil {
-			return nil, err
-		}
-
-		result.Cfg = *c
+		result.Cfg = *configtransport.NewDefaultConfiguration()
 		return result, nil
 	}
 

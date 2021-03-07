@@ -2,7 +2,6 @@ package clienttcp
 
 import (
 	"bufio"
-	"fmt"
 	"main/pkg/seri"
 	"main/pkg/transport/configtransport"
 	"net"
@@ -33,7 +32,10 @@ func NewClient(cfg *configtransport.Cfg) (*ClientTCP, error) {
 }
 
 func (c *ClientTCP) PreprocessMsg(m seri.Message) *ClientTCP {
-	c.P.MsgEncode(m)
+	var err error
+	c.Payload, err = c.P.MsgEncode(m)
+
+	c.L.Print("Error:", err)
 	return c
 }
 
@@ -46,7 +48,7 @@ func (c *ClientTCP) Send() (string, error) {
 		return "", errDial
 	}
 
-	_, errSend := fmt.Fprintf(conn, string(c.Payload)+"\n")
+	_, errSend := conn.Write(c.Payload)
 	if errSend != nil {
 		c.L.Debug(errSend)
 		return "", errSend
