@@ -3,6 +3,7 @@ package processor
 // Package processor added for structuring the processing with the help of serialization interface.
 
 import (
+	"fmt"
 	"io"
 	"main/pkg/seri"
 	"main/pkg/seri/serigob"

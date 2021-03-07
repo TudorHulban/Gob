@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"main/pkg/seri"
 	"main/pkg/transport/clienttcp"
 	"os"
 )
@@ -15,7 +16,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	r, errSend := c.Send([]byte("xxx"))
+	r, errSend := c.PreprocessMsg(seri.Message{
+		ID:      1,
+		Payload: "xxx",
+	}).Send()
+
+	//c.Send([]byte("xxx"))
 	if errSend != io.EOF {
 		log.Println("Error with send:", errSend, r)
 		os.Exit(2)
