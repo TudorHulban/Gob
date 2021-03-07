@@ -28,7 +28,12 @@ func NewServer(cfg *configtransport.Cfg) (*Server, error) {
 	result.stop = make(chan struct{})
 
 	if cfg == nil {
-		result.Cfg = *configtransport.NewDefaultConfiguration()
+		c, err := configtransport.NewDefaultConfiguration()
+		if err != nil {
+			return nil, err
+		}
+
+		result.Cfg = *c
 		return result, nil
 	}
 
@@ -90,6 +95,10 @@ func (s *Server) handleConn(conn net.Conn, comms chan []byte) {
 
 		if len(message) > 0 {
 			s.L.Debug("received: ", string(message))
+
+			// invoking message processor
+			s.P.MsgDecode(message)
+
 			comms <- message
 			break // closing connection after message. should we leave it open?
 		}
