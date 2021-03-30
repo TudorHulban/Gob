@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"log"
 	mrand "math/rand"
+	"os"
+	"strings"
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p-core/crypto"
@@ -25,8 +27,11 @@ import (
 type config struct {
 	listenPort int
 	insecure   bool
+	isServer   bool
 	randseed   int64
 }
+
+const protocol = "/echo/1.0.0"
 
 // Generate a key pair for this host. We will use it at least to obtain a valid host ID.
 func generKeyPair(randseed int64) (crypto.PrivKey, crypto.PubKey, error) {
@@ -82,11 +87,17 @@ func makeBasicHost(cfg config) (host.Host, error) {
 	addr := basicHost.Addrs()[0]
 	fullAddr := addr.Encapsulate(hostAddr)
 
-	log.Printf("I am %s\n", fullAddr)
-	if cfg.insecure {
-		log.Printf("Now run \"./echo -l %d -d %s -insecure\" on a different terminal\n", cfg.listenPort+1, fullAddr)
-	} else {
-		log.Printf("Now run \"./echo -l %d -d %s\" on a different terminal\n", cfg.listenPort+1, fullAddr)
+	exePath, _ := os.Executable()
+	exeName := exePath[strings.LastIndex(exePath, "/")+1:]
+
+	log.Printf("I am %s. \n", fullAddr)
+
+	if cfg.isServer {
+		if cfg.insecure {
+			log.Printf("Now run \" ./%s -l %d -d %s -insecure \" on a different terminal. \n", exeName, cfg.listenPort+1, fullAddr)
+		} else {
+			log.Printf("Now run \" ./%s -l %d -d %s \" on a different terminal. \n", exeName, cfg.listenPort+1, fullAddr)
+		}
 	}
 
 	return basicHost, nil
@@ -103,25 +114,27 @@ func main() {
 	target := flag.String("d", "", "target peer to dial")
 	insecure := flag.Bool("insecure", false, "use an unencrypted connection")
 	seed := flag.Int64("seed", 0, "set random seed for id generation")
+
 	flag.Parse()
 
 	if *listenF == 0 {
-		log.Fatal("Please provide a port to bind on with -l")
+		*listenF = 5555
+		log.Printf("Using port %d for incoming connections. \n", *listenF)
 	}
 
 	// Make a host that listens on the given multiaddress
-	ha, err := makeBasicHost(config{
+	host, err := makeBasicHost(config{
 		listenPort: *listenF,
 		insecure:   *insecure,
+		isServer:   len(*target) == 0,
 		randseed:   *seed,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Set a stream handler on host A. /echo/1.0.0 is
-	// a user-defined protocol name.
-	ha.SetStreamHandler("/echo/1.0.0", func(s network.Stream) {
+	// Set a stream handler on host A. /echo/1.0.0 is a user-defined protocol name.
+	host.SetStreamHandler(protocol, func(s network.Stream) {
 		log.Println("Got a new stream!")
 
 		if err := doEcho(s); err != nil {
@@ -133,52 +146,50 @@ func main() {
 	})
 
 	if *target == "" {
-		log.Println("listening for connections")
+		log.Println("Listening for connections")
 		select {} // hang forever
 	}
 	/**** This is where the listener code ends ****/
 
-	// The following code extracts target's the peer ID from the
-	// given multiaddress
-	ipfsaddr, err := ma.NewMultiaddr(*target)
+	// The following code extracts target's peer ID from the given multiaddress.
+	addressIPFS, err := ma.NewMultiaddr(*target)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+	hostID, err := addressIPFS.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	peerid, err := peer.IDB58Decode(pid)
+	peerID, err := peer.IDB58Decode(hostID)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	// Decapsulate the /ipfs/<peerID> part from the target
-	// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
-	targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", pid))
-	targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
+	// Decapsulate the /ipfs/<peerID> part from the target /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
+	targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", hostID))
+	targetAddr := addressIPFS.Decapsulate(targetPeerAddr)
 
 	// We have a peer ID and a targetAddr so we add it to the peerstore
 	// so LibP2P knows how to contact it
-	ha.Peerstore().AddAddr(peerid, targetAddr, peerstore.PermanentAddrTTL)
+	host.Peerstore().AddAddr(peerID, targetAddr, peerstore.PermanentAddrTTL)
 
 	log.Println("opening stream")
 	// make a new stream from host B to host A
 	// it should be handled on host A by the handler we set above because
 	// we use the same /echo/1.0.0 protocol
-	s, err := ha.NewStream(context.Background(), peerid, "/echo/1.0.0")
+	stream, err := host.NewStream(context.Background(), peerID, protocol)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	_, err = s.Write([]byte("Hello, world!\n"))
+	_, err = stream.Write([]byte("Hi, world!\n"))
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	out, err := ioutil.ReadAll(s)
+	out, err := ioutil.ReadAll(stream)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -186,7 +197,7 @@ func main() {
 	log.Printf("read reply: %q\n", out)
 }
 
-// doEcho reads a line of data a stream and writes it back
+// doEcho reads a line of data from passed stream and writes it back.
 func doEcho(s network.Stream) error {
 	buf := bufio.NewReader(s)
 
@@ -196,6 +207,7 @@ func doEcho(s network.Stream) error {
 	}
 
 	log.Printf("read: %s\n", str)
-	_, err = s.Write([]byte(str))
+
+	_, err = s.Write([]byte(str[:len(str)-1]))
 	return err
 }
