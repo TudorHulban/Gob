@@ -3,7 +3,10 @@ module main
 go 1.15
 
 require (
-	github.com/TudorHulban/log v0.0.0-20210307143404-2fbfb88cf90f
+	github.com/ipfs/go-log/v2 v2.1.3
+	github.com/libp2p/go-libp2p v0.13.0
+	github.com/libp2p/go-libp2p-core v0.8.5
+	github.com/multiformats/go-multiaddr v0.3.1
+	github.com/pebbe/zmq4 v1.2.7
 	github.com/pkg/errors v0.9.1
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 )
